@@ -1,0 +1,30 @@
+#! /usr/bin/python3
+# -*- coding: utf-8 -*-
+
+
+"""
+    **************************************************
+    Parset to COPPER pre-processing Configuration file
+    **************************************************
+"""
+
+import argparse
+from copperconfig.nenufar_parset import Parset
+
+# ============================================================= #
+# ============================================================= #
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-p',
+        '--parset',
+        type=str,
+        help='NenuFAR parset file.',
+        required=True
+    )
+    args = parser.parse_args()
+
+    parset = Parset(args.parset)
+    parset.to_tml("xxx")
+# ============================================================= #
+# ============================================================= #
