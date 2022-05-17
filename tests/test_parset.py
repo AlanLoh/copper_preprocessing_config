@@ -36,7 +36,7 @@ def test_parset_converting():
 
     assert parset.phase_centers[0]["toDo"] == "NICKEL"
 
-    parset.to_config_tml()
+    parset.to_config_toml()
 # ============================================================= #
 # ============================================================= #
 
@@ -49,9 +49,9 @@ def test_tml_writing():
 
     open_mock = mock_open()
     with patch("copperconfig.nenufar_parset.open", open_mock, create=True):
-        parset.to_config_tml()
+        parset.to_config_toml()
 
-    open_mock.assert_called_with("sun.tml", "w")
+    open_mock.assert_called_with("sun.toml", "w")
     calls = [
         call("tasks = ['process', 'rsync_quality', 'quality', 'rsync']\n\n"),
         call("log_email = ['alan.loh@obspm.fr', 'carine.briand@obspm.fr', 'jean-mathias.griessmeier@cnrs-orleans.fr', 'baptiste.cecconi@obspm.fr', 'nenufar-survey@obs-nancay.fr']\n"),
@@ -82,9 +82,9 @@ def test_empty_param():
 
     open_mock = mock_open()
     with patch("copperconfig.nenufar_parset.open", open_mock, create=True):
-        parset.to_config_tml()
+        parset.to_config_toml()
 
-    open_mock.assert_called_with("empty_parameters.tml", "w")
+    open_mock.assert_called_with("empty_parameters.toml", "w")
     calls = [
         call("tasks = ['process', 'rsync']\n\n"),
         call("log_email = ['alan.loh@obspm.fr', 'carine.briand@obspm.fr', 'jean-mathias.griessmeier@cnrs-orleans.fr', 'baptiste.cecconi@obspm.fr', 'nenufar-survey@obs-nancay.fr']\n"),
@@ -111,7 +111,7 @@ def test_bad_avg_freq():
     parset_file = os.path.join(DATA_DIR, "bad_avg_freq.parset")
     parset = Parset(parset_file)
     with pytest.raises(ValueError):
-        parset.to_config_tml()
+        parset.to_config_toml()
 # ============================================================= #
 # ============================================================= #
 
@@ -123,7 +123,7 @@ def test_bad_channels():
     parset_file = os.path.join(DATA_DIR, "bad_channels_number.parset")
     parset = Parset(parset_file)
     with pytest.raises(ValueError):
-        parset.to_config_tml()
+        parset.to_config_toml()
 # ============================================================= #
 # ============================================================= #
 

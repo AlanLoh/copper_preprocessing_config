@@ -37,13 +37,13 @@ DEFAULT_STARTCHAN = 0
 from copperconfig.nenufar_parset import Parset
 
 parset = Parset("<parset_file>")
-parset.to_config_tml(directory="")
+parset.to_config_toml(directory="")
 ```
 
 ### Command line
 
 ```
-python parset2preprocconfig --parset <nenufar_parset.parset> --directory <path_to_store_the_tml_file>
+python parset2preprocconfig --parset <nenufar_parset.parset> --directory <path_to_store_the_toml_file>
 ```
 
 ## NenuFAR Parset file

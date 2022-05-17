@@ -511,15 +511,21 @@ class Parset(object):
 
     # --------------------------------------------------------- #
     # ------------------------ Methods ------------------------ #
-    def to_config_tml(self, directory: str = ""):
+    def to_config_toml(self, directory: str = ""):
         """ Converts the Parset into a COPPER pre-processing configuration file.
         """
-        file_name = os.path.basename(self.parset).replace(".parset", ".tml")
+        try:
+            subbands = np.array(self.phase_centers[0]["subbandList"])
+        except KeyError:
+            # There is no PhaseCenter
+            subbands = np.array(self.output["nri_subbandList"])
+
+        file_name = os.path.basename(self.parset).replace(".parset", ".toml")
         config = CopperConfig(
             file_name=os.path.join(directory, file_name),
             channelization=self.output["nri_channelization"],
             dumptime=self.output["nri_dumpTime"],
-            subbands=np.array(self.phase_centers[0]["subbandList"]),
+            subbands=subbands,
             email=self.observation["contactEmail"]
         )
 
