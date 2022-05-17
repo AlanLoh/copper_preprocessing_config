@@ -33,10 +33,13 @@ from typing import List
 
 from . import (
     ENV_FILE_PATH,
+    DEFAULT_ENV_FILE,
     AVAILABLE_STAT,
     AVERAGE_TIMESTEP_MIN,
     AVERAGE_TIMESTEP_MAX,
+    DEFAULT_AVERAGE_TIMESTEP,
     AVERAGE_FREQSTEP_MIN,
+    DEFAULT_AVERAGE_FREQSTEP,
     DEFAULT_STARTCHAN,
     FLAG_STRATEGY_FILE_PATH
 )
@@ -147,7 +150,7 @@ class _ParsetProperty(MutableMapping):
 
 
 # ============================================================= #
-# ----------------------- CooperConfig ------------------------ #
+# ----------------------- CopperConfig ------------------------ #
 # ============================================================= #
 class CopperConfig:
     """ """
@@ -164,20 +167,20 @@ class CopperConfig:
             "worker": {
                 "env_file": {
                     "value": None,
-                    "default": "env_default.sh",
+                    "default": DEFAULT_ENV_FILE,
                     "check_function": self._check_env_file
                 }
             },
             "process": {
                 "avg_timestep": {
                     "value": None,
-                    "default": 8,
+                    "default": DEFAULT_AVERAGE_TIMESTEP,
                     "parsing_function": (lambda x: int(x)),
                     "check_function": self._check_avg_timestep,
                 },
                 "avg_freqstep": {
                     "value": None,
-                    "default": 6,
+                    "default": DEFAULT_AVERAGE_FREQSTEP,
                     "parsing_function": (lambda x: int(x)),
                     "check_function": self._check_avg_freqstep,
                 },
@@ -201,7 +204,7 @@ class CopperConfig:
                 },
                 "flag_strategy": {
                     "value": None,
-                    "default": 'NenuFAR-64C1S.rfis',# --> repo: "...config" --> chercherer *.rfis/.lua
+                    "default": 'NenuFAR-64C1S.rfis',
                     "check_function": self._check_flag_strategy,
                 }
             },
@@ -334,8 +337,13 @@ class CopperConfig:
     def _check_parameters(self) -> None:
         """ """
         log.info("Checking the parameters values...")
+
+        # Fill out missing required parameters to their default values
+        # if the PhaseCenter[x].parameters field does not specify them.
+        # Check every parameter using the dedicted self._check_XX methods.
         for step in self.data.keys():
             step_dict = self.data[step]
+            
             for key in step_dict.keys():
                 # Set the parameters to its default value if it has not been filled
                 if step_dict[key]["value"] is None:
@@ -349,11 +357,29 @@ class CopperConfig:
                         f"Parameter '{key}': invalid value. Set to default value {step_dict[key]['default']}."
                     )
                     step_dict[key]["value"] = step_dict[key]["default"]
+        
+        # Once settled, check the combination of the channel related parameters.
+        channels = self.channelization
+        avg_step_chan = self.data["process"]["avg_freqstep"]["value"]
+        start_chan = self.data["process"]["startchan"]["value"]
+        nchan = self.data["process"]["nchan"]["value"]
+        remaining_channels = channels - start_chan
+        if remaining_channels < nchan:
+            log.error(
+                f"Channelization ({channels}) - Start_chan ({start_chan}) = Remaining channels ({remaining_channels}) < nchan ({nchan})."
+            )
+            raise ValueError("Bad combination 'channelization'/'startchan'/'nchan'.")
+        if nchan%avg_step_chan != 0:
+            log.error(
+                f"nchan ({nchan}) % avg_freqstep ({avg_step_chan}) = {nchan%avg_step_chan} != 0."
+            )
+            raise ValueError("Selected number of channels {nchan} is not divisible by avg_freqstep {avg_step_chan}.")
 
 
     @staticmethod
     def _check_env_file(file_name: str) -> bool:
         """ """
+        file_name = os.path.join(ENV_FILE_PATH, file_name)
         available_env_files = glob.glob(os.path.join(ENV_FILE_PATH, "*.sh"))
         file_exists = file_name in available_env_files
         if not file_exists:
@@ -393,6 +419,7 @@ class CopperConfig:
     @staticmethod
     def _check_flag_strategy(flag_strategy: str) -> bool:
         """ """
+        flag_strategy = os.path.join(FLAG_STRATEGY_FILE_PATH, flag_strategy)
         available_strategies = glob.glob(os.path.join(FLAG_STRATEGY_FILE_PATH, "*.rfis"))
         available_strategies += glob.glob(os.path.join(FLAG_STRATEGY_FILE_PATH, "*.lua"))
         file_exists = flag_strategy in available_strategies
@@ -407,7 +434,6 @@ class CopperConfig:
         """ """
         matches = re.findall(r"(\d+)-(\d+)-(\d+)", sws)
         for edges in matches:
-            print(edges)
             low_edge = int(edges[1])
             high_edge = int(edges[2])
             if not np.any((self.subbands >= low_edge) * (self.subbands <= high_edge)):
