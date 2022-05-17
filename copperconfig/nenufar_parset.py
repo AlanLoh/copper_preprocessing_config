@@ -264,7 +264,6 @@ class CopperConfig:
 
     # --------------------------------------------------------- #
     # ------------------------ Methods ------------------------ #
-
     def default_configuration(self):
         """ """
         log.info("Applying default pre-processing...")

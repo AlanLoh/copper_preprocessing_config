@@ -22,9 +22,16 @@ if __name__ == "__main__":
         help='NenuFAR parset file.',
         required=True
     )
+    parser.add_argument(
+        '-d',
+        '--directory',
+        type=str,
+        help='Directory where the TML file will be written.',
+        required=True
+    )
     args = parser.parse_args()
 
     parset = Parset(args.parset)
-    parset.to_tml("xxx")
+    parset.to_config_tml(directory=args.directory)
 # ============================================================= #
 # ============================================================= #
