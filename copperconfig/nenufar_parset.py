@@ -267,7 +267,7 @@ class CopperConfig:
     def default_configuration(self):
         """ """
         log.info("Applying default pre-processing...")
-        self._write_file(kind="default")
+        return self._write_file(kind="default")
     
 
     def custom_configuration(self, phase_center: _ParsetProperty):
@@ -278,7 +278,7 @@ class CopperConfig:
 
         self._set_parameters(parameters)
         self._check_parameters()
-        self._write_file(kind="value")
+        return self._write_file(kind="value")
 
 
     # --------------------------------------------------------- #
@@ -304,6 +304,7 @@ class CopperConfig:
                     wfile.write(f"{key} = {self.data['quality'][key][kind]}\n")
 
         log.info(f"'{self.file_name}' written.")
+        return self.file_name
 
 
     def _set_parameters(self, parameters: dict) -> None:
