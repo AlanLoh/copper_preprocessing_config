@@ -7,6 +7,9 @@ ENV_FILE_PATH = "./"
 # Flag strategy (*.rfis / *.lua) path
 FLAG_STRATEGY_FILE_PATH = "./"
 
+# Send or not Slack messages in the #alerte-nickel-preprocessing channel
+SEND_SLACK_MESSAGE = True
+
 # Parameters Checks
 AVAILABLE_STAT = ["SNR_XX", "SNR_YY", "RFIPercentage_XX"]
 

@@ -30,8 +30,13 @@ import os
 import re
 import glob
 from typing import List
+import traceback
+import json
+import requests
+
 
 from . import (
+    SEND_SLACK_MESSAGE,
     ENV_FILE_PATH,
     DEFAULT_ENV_FILE,
     AVAILABLE_STAT,
@@ -264,13 +269,14 @@ class CopperConfig:
 
     # --------------------------------------------------------- #
     # ------------------------ Methods ------------------------ #
-    def default_configuration(self):
+    def default_configuration(self) -> str:
         """ """
         log.info("Applying default pre-processing...")
-        return self._write_file(kind="default")
-    
+        file_content = self._write_file(kind="default")
+        return file_content
 
-    def custom_configuration(self, phase_center: _ParsetProperty):
+
+    def custom_configuration(self, phase_center: _ParsetProperty) -> str:
         """ """
         # Decode the parameter field
         pattern = r"(\S+)\s*=\s*(.*?)\s*(?=\S+\s*=|$)"
@@ -278,33 +284,33 @@ class CopperConfig:
 
         self._set_parameters(parameters)
         self._check_parameters()
-        return self._write_file(kind="value")
+        file_content = self._write_file(kind="value")
+        return file_content
 
 
     # --------------------------------------------------------- #
     # ----------------------- Internal ------------------------ #
-    def _write_file(self, kind: str = "value") -> None:
+    def _write_file(self, kind: str = "value") -> str:
         """ """
+        text = ""
+        text += self.tasks + "\n\n"
+        text += f"log_email = {self.email}\n"
+        text += "\n[worker]\n"
+        for key in self.data["worker"]:
+            text += f"{key} = {self.data['worker'][key][kind]}\n"
+        text += "\n[process]\n"
+        for key in self.data["process"]:
+           text += f"{key} = {self.data['process'][key][kind]}\n"
+        if self._quality_step:
+            text += "\n[quality]\n" 
+            for key in self.data["quality"]:
+                text += f"{key} = {self.data['quality'][key][kind]}\n"
+
         with open(self.file_name, "w") as wfile:
-            wfile.write(self.tasks + "\n\n")
-           
-            wfile.write(f"log_email = {self.email}\n")
-           
-            wfile.write("\n[worker]\n")
-            for key in self.data["worker"]:
-                wfile.write(f"{key} = {self.data['worker'][key][kind]}\n")
-           
-            wfile.write("\n[process]\n")
-            for key in self.data["process"]:
-                wfile.write(f"{key} = {self.data['process'][key][kind]}\n")
-           
-            if self._quality_step:
-                wfile.write("\n[quality]\n")
-                for key in self.data["quality"]:
-                    wfile.write(f"{key} = {self.data['quality'][key][kind]}\n")
+            wfile.write(text)
 
         log.info(f"'{self.file_name}' written.")
-        return self.file_name
+        return text
 
 
     def _set_parameters(self, parameters: dict) -> None:
@@ -512,7 +518,7 @@ class Parset(object):
 
     # --------------------------------------------------------- #
     # ------------------------ Methods ------------------------ #
-    def to_config_toml(self, directory: str = ""):
+    def to_config_toml(self, directory: str = "") -> str:
         """ Converts the Parset into a COPPER pre-processing configuration file.
         """
         try:
@@ -521,31 +527,45 @@ class Parset(object):
             # There is no PhaseCenter
             subbands = np.array(self.output["nri_subbandList"])
 
-        file_name = os.path.basename(self.parset).replace(".parset", ".toml")
-        config = CopperConfig(
-            file_name=os.path.join(directory, file_name),
-            channelization=self.output["nri_channelization"],
-            dumptime=self.output["nri_dumpTime"],
-            subbands=subbands,
-            email=self.observation["contactEmail"]
-        )
+        try:
+            file_name = os.path.basename(self.parset).replace(".parset", ".toml")
+            config = CopperConfig(
+                file_name=os.path.join(directory, file_name),
+                channelization=self.output["nri_channelization"],
+                dumptime=self.output["nri_dumpTime"],
+                subbands=subbands,
+                email=self.observation["contactEmail"]
+            )
 
-        # Fill the CopperConfig object with relevant values from the parset to check the configuration
-        # config.blabla()
+            # If the parset version is older than 1.0, the PhaseCenters
+            # were not defined, it was impossible to specify parameters.
+            if self.version < (1, 0):
+                log.warning(f"Parset version '{self.version}' does not contain PhaseCenters.")
+                file_content = config.default_configuration()
+            else:
+                phase_center = self.phase_centers[0]
+                # If there is no PhaseCenter[0].parameters
+                if "parameters" not in phase_center:
+                    log.warning("No 'parameters' found for PhaseCenter[0], or no PhaseCenter found at all.")
+                    file_content = config.default_configuration()
+                else:
+                    file_content = config.custom_configuration(phase_center)
+            
+            self._slack_message(
+                file_name=config.file_name,
+                message=file_content,
+                success=True
+            )
 
-        # If the parset version is older than 1.0, the PhaseCenters
-        # were not defined, it was impossible to specify parameters.
-        if self.version < (1, 0):
-            log.warning(f"Parset version '{self.version}' does not contain PhaseCenters.")
-            return config.default_configuration()
+            return config.file_name
 
-        phase_center = self.phase_centers[0]
-        # If there is no PhaseCenter[0].parameters
-        if "parameters" not in phase_center:
-            log.warning("No 'parameters' found for PhaseCenter[0], or no PhaseCenter found at all.")
-            return config.default_configuration()
-        
-        return config.custom_configuration(phase_center)
+        except Exception as e:
+            self._slack_message(
+                file_name="",
+                message=traceback.format_exc(),
+                success=False
+            )
+            raise
 
 
     # --------------------------------------------------------- #
@@ -607,6 +627,37 @@ class Parset(object):
                     line = file_object.readline()
         except Exception as e:
             pass
+    
+
+    def _slack_message(self, file_name: str, message: str, success: bool = True) -> None:
+        """ """
+        if not SEND_SLACK_MESSAGE:
+            return
+
+        webhook_url = "https://hooks.slack.com/services/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"
+        success_message = f"Successfull conversion to `{os.path.basename(file_name)}`"
+        failure_message = f"Error while treating `{os.path.basename(self.parset)}`"
+        slack_data = {
+            "attachments": [
+                {
+                    "mrkdwn_in": ["text"],
+                    "color": "good" if success else "danger",
+                    "pretext": "NenuFAR parset -> COPPER configuration file.",
+                    "title": success_message if success else failure_message,
+                    "text": "```" + message + "```",
+                    "footer": __file__,
+                }
+            ]
+        }
+        response = requests.post(
+            webhook_url, data = json.dumps(slack_data),
+            headers={"Content-Type": "application/json"}
+        )
+        if response.status_code != 200:
+            raise ValueError(
+                f"Request to slack returned an error {response.status_code}, the response is:\n{response.text}"
+            )
+        log.info("Slack message sent.")
 # ============================================================= #
 # ============================================================= #
 
