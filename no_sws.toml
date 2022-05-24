@@ -1,0 +1,14 @@
+tasks = ['process', 'rsync']
+
+log_email = ['alan.loh@obspm.fr', 'carine.briand@obspm.fr', 'jean-mathias.griessmeier@cnrs-orleans.fr', 'baptiste.cecconi@obspm.fr', 'nenufar-survey@obs-nancay.fr']
+
+[worker]
+env_file = env_default.sh
+
+[process]
+avg_timestep = 1
+avg_freqstep = 15
+startchan = 2
+nchan = 60
+compress = False
+flag_strategy = NenuFAR-64C1S.rfis

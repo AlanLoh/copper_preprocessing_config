@@ -37,6 +37,7 @@ import requests
 
 from . import (
     SEND_SLACK_MESSAGE,
+    SLACK_WEBHOOK_URL,
     ENV_FILE_PATH,
     DEFAULT_ENV_FILE,
     AVAILABLE_STAT,
@@ -216,13 +217,14 @@ class CopperConfig:
             "quality": {
                 "sws": {
                     "value": None,
-                    "default": None,
+                    "default": "[" + ", ".join([f"'SW{i+1:02}-{g[0]}-{g[-1]}'" for i, g in enumerate(np.split(self.subbands,np.where(np.diff(self.subbands) != 1)[0] + 1))]) + "]",
                     "parsing_function": (lambda x: str([f"SW{i+1:02}-{val[0]}-{val[1]}" for i, val in enumerate(re.findall(r"(\d+)-(\d+)", x))])),
                     "check_function": self._check_sws,
                 },
                 "stat_pols": {
                     "value": None,	
                     "default": None,
+                    "parsing_function": (lambda x: [stat.replace(" ", "").replace("[", "").replace("]", "") for stat in x.split(",")]),
                     "check_function": self._check_stat_pols,
                 }
             }
@@ -249,10 +251,14 @@ class CopperConfig:
     @property
     def email(self) -> List[str]:
         """ """
-        return self._email.split(",")
+        if len(self._email) > 1:
+            log.info(
+                f"Only the first email is considered: '{self._email[0]}'."
+            )
+        return self._email[0]
     @email.setter
     def email(self, e: str) -> None:
-        self._email = e
+        self._email = e.split(",")
 
 
     @property
@@ -262,7 +268,7 @@ class CopperConfig:
         if (quality["sws"]["value"] is None) or (quality["stat_pols"]["value"] is None):
             self._quality_step = False
             log.info("No quality step will be applied.")
-            return "tasks = ['process', 'rsync']"
+            return "tasks = ['process', 'rsync_quality', 'rsync']"
         else:
             return "tasks = ['process', 'rsync_quality', 'quality', 'rsync']"
 
@@ -354,13 +360,13 @@ class CopperConfig:
                 # Set the parameters to its default value if it has not been filled
                 if step_dict[key]["value"] is None:
                     step_dict[key]["value"] = step_dict[key]["default"]
-                    log.info(f"Parameter '{key}': missing. Set to default value {step_dict[key]['default']}.")
+                    log.info(f"Parameter '{key}': missing. Set to default value '{step_dict[key]['default']}'.")
 
                 # Check that the parameters is filled as expected
                 verify = step_dict[key]["check_function"]
                 if not verify(step_dict[key]["value"]):
                     log.warning(
-                        f"Parameter '{key}': invalid value. Set to default value {step_dict[key]['default']}."
+                        f"Parameter '{key}': invalid value. Set to default value '{step_dict[key]['default']}'."
                     )
                     step_dict[key]["value"] = step_dict[key]["default"]
         
@@ -452,9 +458,8 @@ class CopperConfig:
 
 
     @staticmethod
-    def _check_stat_pols(stat_pol: str) -> bool:
+    def _check_stat_pols(stat_pol: List[str]) -> bool:
         """ """
-        stat_pol = stat_pol.replace("[", "").replace("]", "").replace(" ", "").split(",")
         known_strategies = np.all(np.isin(stat_pol, AVAILABLE_STAT))
         if not known_strategies:
             log.warning(
@@ -634,7 +639,6 @@ class Parset(object):
         if not SEND_SLACK_MESSAGE:
             return
 
-        webhook_url = "https://hooks.slack.com/services/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"
         success_message = f"Successfull conversion to `{os.path.basename(file_name)}`"
         failure_message = f"Error while treating `{os.path.basename(self.parset)}`"
         slack_data = {
@@ -650,7 +654,7 @@ class Parset(object):
             ]
         }
         response = requests.post(
-            webhook_url, data = json.dumps(slack_data),
+            SLACK_WEBHOOK_URL, data = json.dumps(slack_data),
             headers={"Content-Type": "application/json"}
         )
         if response.status_code != 200:
