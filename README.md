@@ -43,7 +43,7 @@ parset.to_config_toml(directory="")
 ### Command line
 
 ```
-python parset2preprocconfig --parset <nenufar_parset.parset> --directory <path_to_store_the_toml_file>
+parset2preprocconfig --parset <nenufar_parset.parset> --directory <path_to_store_the_toml_file>
 ```
 
 ## NenuFAR Parset file
