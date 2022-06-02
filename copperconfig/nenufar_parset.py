@@ -173,7 +173,8 @@ class CopperConfig:
             "worker": {
                 "env_file": {
                     "value": None,
-                    "default": DEFAULT_ENV_FILE,
+                    "default": os.path.join(ENV_FILE_PATH, DEFAULT_ENV_FILE),
+                    "parsing_function": (lambda p: os.path.join(ENV_FILE_PATH, p) if not os.path.isabs(p) else p),
                     "check_function": self._check_env_file
                 }
             },
@@ -210,15 +211,16 @@ class CopperConfig:
                 },
                 "flag_strategy": {
                     "value": None,
-                    "default": 'NenuFAR-64C1S.rfis',
+                    "default": os.path.join(FLAG_STRATEGY_FILE_PATH, 'NenuFAR-64C1S.rfis'),
+                    "parsing_function": (lambda f: os.path.join(FLAG_STRATEGY_FILE_PATH, f) if not os.path.isabs(f) else f),
                     "check_function": self._check_flag_strategy,
                 }
             },
             "quality": {
                 "sws": {
                     "value": None,
-                    "default": "[" + ", ".join([f"'SW{i+1:02}-{g[0]}-{g[-1]}'" for i, g in enumerate(np.split(self.subbands,np.where(np.diff(self.subbands) != 1)[0] + 1))]) + "]",
-                    "parsing_function": (lambda x: str([f"SW{i+1:02}-{val[0]}-{val[1]}" for i, val in enumerate(re.findall(r"(\d+)-(\d+)", x))])),
+                    "default": [f"'SW{i+1:02}-{g[0]}-{g[-1]}'" for i, g in enumerate(np.split(self.subbands, np.where(np.diff(self.subbands) != 1)[0] + 1))],
+                    "parsing_function": (lambda x: [f"SW{i+1:02}-{val[0]}-{val[1]}" for i, val in enumerate(re.findall(r"(\d+)-(\d+)", x))]),
                     "check_function": self._check_sws,
                 },
                 "stat_pols": {
@@ -300,17 +302,17 @@ class CopperConfig:
         """ """
         text = ""
         text += self.tasks + "\n\n"
-        text += f"log_email = {self.email}\n"
+        text += f"log_email = '{self.email}'\n"
         text += "\n[worker]\n"
         for key in self.data["worker"]:
-            text += f"{key} = {self.data['worker'][key][kind]}\n"
+            text += f"{key} = {repr(self.data['worker'][key][kind])}\n"
         text += "\n[process]\n"
         for key in self.data["process"]:
-           text += f"{key} = {self.data['process'][key][kind]}\n"
+           text += f"{key} = {repr(self.data['process'][key][kind])}\n"
         if self._quality_step:
             text += "\n[quality]\n" 
             for key in self.data["quality"]:
-                text += f"{key} = {self.data['quality'][key][kind]}\n"
+                text += f"{key} = {repr(self.data['quality'][key][kind])}\n"
 
         with open(self.file_name, "w") as wfile:
             wfile.write(text)
@@ -444,7 +446,7 @@ class CopperConfig:
 
     def _check_sws(self, sws: str) -> bool:
         """ """
-        matches = re.findall(r"(\d+)-(\d+)-(\d+)", sws)
+        matches = re.findall(r"(\d+)-(\d+)-(\d+)", str(sws))
         for edges in matches:
             low_edge = int(edges[1])
             high_edge = int(edges[2])

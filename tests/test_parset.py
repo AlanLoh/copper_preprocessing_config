@@ -54,16 +54,16 @@ def test_tml_writing():
     open_mock.assert_called_with("sun.toml", "w")
     calls = [call(
         "tasks = ['process', 'rsync_quality', 'quality', 'rsync']\n\n"
-        "log_email = alan.loh@obspm.fr\n"
+        "log_email = 'alan.loh@obspm.fr'\n"
         '\n[worker]\n'
-        'env_file = env_default.sh\n'
+        "env_file = './env_default.sh'\n"
         '\n[process]\n'
         'avg_timestep = 1\n'
         'avg_freqstep = 15\n'
         'startchan = 2\n'
         'nchan = 60\n'
         'compress = False\n'
-        'flag_strategy = NenuFAR-64C1S.rfis\n'
+        "flag_strategy = './NenuFAR-64C1S.rfis'\n"
         '\n[quality]\n'
         "sws = ['SW01-106-200', 'SW02-202-300', 'SW03-306-418']\n"
         "stat_pols = ['SNR_XX', 'SNR_YY', 'RFIPercentage_XX']\n"
@@ -87,16 +87,16 @@ def test_empty_param():
     open_mock.assert_called_with("empty_parameters.toml", "w")
     calls = [call(
         "tasks = ['process', 'rsync_quality', 'rsync']\n\n"
-        "log_email = alan.loh@obspm.fr\n"
+        "log_email = 'alan.loh@obspm.fr'\n"
         '\n[worker]\n'
-        'env_file = env_default.sh\n'
+        "env_file = './env_default.sh'\n"
         '\n[process]\n'
         'avg_timestep = 8\n'
         'avg_freqstep = 6\n'
         'startchan = 0\n'
         'nchan = 64\n'
         'compress = False\n'
-        'flag_strategy = NenuFAR-64C1S.rfis\n'
+        "flag_strategy = './NenuFAR-64C1S.rfis'\n"
     )]
 
     open_mock.return_value.write.assert_has_calls(calls)
