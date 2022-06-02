@@ -673,6 +673,9 @@ class Parset(object):
         """ """
         if not SEND_SLACK_MESSAGE:
             return
+        
+        if SLACK_WEBHOOK_URL is None:
+            log.warning("No Slack webhook URL can be found in env variable.")
 
         success_message = f"Successfull conversion to `{os.path.basename(file_name)}`"
         failure_message = f"Error while treating `{os.path.basename(self.parset)}`"
