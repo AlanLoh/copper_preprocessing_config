@@ -287,7 +287,7 @@ class CopperConfig:
         #     log.info("No quality step will be applied.")
         #     return "['process', 'rsync_quality', 'rsync']"
         # else:
-        return "['process', 'rsync_quality', 'quality', 'rsync']"
+        return ['process', 'rsync_quality', 'quality', 'rsync']
 
 
     # --------------------------------------------------------- #

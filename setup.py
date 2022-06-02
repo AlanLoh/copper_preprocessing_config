@@ -18,7 +18,7 @@ setup(
     scripts=[
         "bin/parset2preprocconfig"
     ],
-    version="0.6",
+    version="0.7",
     description='NenuFAR Parset to COPPER configuration file converter',
     url="https://github.com/AlanLoh/copper_preprocessing_config.git",
     author="Alan Loh",
