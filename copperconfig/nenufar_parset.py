@@ -47,7 +47,9 @@ from . import (
     AVERAGE_FREQSTEP_MIN,
     DEFAULT_AVERAGE_FREQSTEP,
     DEFAULT_STARTCHAN,
-    FLAG_STRATEGY_FILE_PATH
+    FLAG_STRATEGY_FILE_PATH,
+    DEFAULT_FLAG_RFI,
+    DEFAULT_FLAG_MEMORYPERC
 )
 
 
@@ -183,13 +185,13 @@ class CopperConfig:
                     "value": None,
                     "default": DEFAULT_AVERAGE_TIMESTEP,
                     "parsing_function": (lambda x: int(x)),
-                    "check_function": self._check_avg_timestep,
+                    "check_function": self._check_avg_timestep
                 },
                 "avg_freqstep": {
                     "value": None,
                     "default": DEFAULT_AVERAGE_FREQSTEP,
                     "parsing_function": (lambda x: int(x)),
-                    "check_function": self._check_avg_freqstep,
+                    "check_function": self._check_avg_freqstep
                 },
                 "startchan": {
                     "value": None,
@@ -207,13 +209,25 @@ class CopperConfig:
                     "value": None,
                     "default": False,
                     "parsing_function": (lambda x: False if x.lower()=="false" else True),
-                    "check_function": self._check_compress,
+                    "check_function": self._check_compress
                 },
                 "flag_strategy": {
                     "value": None,
                     "default": os.path.join(FLAG_STRATEGY_FILE_PATH, 'NenuFAR-64C1S.rfis'),
                     "parsing_function": (lambda f: os.path.join(FLAG_STRATEGY_FILE_PATH, f) if not os.path.isabs(f) else f),
-                    "check_function": self._check_flag_strategy,
+                    "check_function": self._check_flag_strategy
+                },
+                "flag_rfi": {
+                    "value": None,
+                    "default": DEFAULT_FLAG_RFI,
+                    "parsing_function": (lambda x: bool(x)),
+                    "check_function": self._check_flag_rfi
+                },
+                "flag_memoryperc": {
+                    "value": DEFAULT_FLAG_MEMORYPERC, # This prevents any update from the parameter field
+                    "default": DEFAULT_FLAG_MEMORYPERC,
+                    "parsing_function": (lambda x: int(x)),
+                    "check_function": self._check_flag_memoryperc
                 }
             },
             "quality": {
@@ -339,10 +353,15 @@ class CopperConfig:
                     except:
                         log.warning(f"Parameter '{key}': parsing error. Considering no value.")
                         value = None
-                    step_dict[key_lower]["value"] = value
+                    if step_dict[key_lower]["value"] is None:
+                        step_dict[key_lower]["value"] = value
+                    else:
+                        # The parameter has a fixed value that cannot be set
+                        break
                     log.info(f"'{key_lower}' set to '{value}'.")
                     break
             else:
+                # If the loop has not broken, it means the parameter is not expected
                 log.warning(
                     f"Unexpected parset parameter key '{key}': skipped."
                 )
@@ -431,6 +450,12 @@ class CopperConfig:
 
 
     @staticmethod
+    def _check_flag_rfi(flag_rfi: bool) -> bool:
+        """ """
+        return isinstance(flag_rfi, bool)
+
+
+    @staticmethod
     def _check_flag_strategy(flag_strategy: str) -> bool:
         """ """
         flag_strategy = os.path.join(FLAG_STRATEGY_FILE_PATH, flag_strategy)
@@ -442,6 +467,14 @@ class CopperConfig:
                 f"Unable to find 'flag_strategy': '{flag_strategy}' among the existing '{available_strategies}'."
             )
         return file_exists
+
+
+    @staticmethod
+    def _check_flag_memoryperc(flag_memoryperc: int) -> bool:
+        """ """
+        is_int = isinstance(flag_memoryperc, int)
+        is_percent = 0 <= flag_memoryperc <= 100
+        return is_int & is_percent
 
 
     def _check_sws(self, sws: str) -> bool:

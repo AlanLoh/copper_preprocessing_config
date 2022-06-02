@@ -13,6 +13,8 @@ ENV_FILE_PATH = "./"
 
 # Flag strategy (*.rfis / *.lua) path
 FLAG_STRATEGY_FILE_PATH = "./"
+DEFAULT_FLAG_RFI = True
+DEFAULT_FLAG_MEMORYPERC = 30 # not set via parameters
 
 # Parameters Checks
 AVAILABLE_STAT = ["SNR_XX", "SNR_YY", "RFIPercentage_XX"]
