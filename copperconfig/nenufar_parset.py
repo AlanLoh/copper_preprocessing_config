@@ -495,7 +495,7 @@ class CopperConfig:
         for edges in matches:
             low_edge = int(edges[1])
             high_edge = int(edges[2])
-            if np.any((self.subbands >= low_edge) * (self.subbands <= high_edge)):
+            if not np.any((self.subbands >= low_edge) * (self.subbands <= high_edge)):
                 log.warning(
                     f"No subbands in the desired quality interval {low_edge}-{high_edge}."
                 )
