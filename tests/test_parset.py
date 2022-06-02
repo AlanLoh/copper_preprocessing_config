@@ -62,13 +62,13 @@ def test_tml_writing():
         'avg_freqstep = 15\n'
         'startchan = 2\n'
         'nchan = 60\n'
-        'compress = False\n'
+        'compress = false\n'
         "flag_strategy = './NenuFAR-64C1S.rfis'\n"
-        'flag_rfi = True\n'
+        'flag_rfi = true\n'
         'flag_memoryperc = 30\n'
         '\n[quality]\n'
-        "sws = ['SW01-106-200', 'SW02-202-300', 'SW03-306-418']\n"
-        "stat_pols = ['SNR_XX', 'SNR_YY', 'RFIPercentage_XX']\n"
+        "sws = [ 'SW01-106-200', 'SW02-202-300', 'SW03-306-418',]\n"
+        "stat_pols = [ 'SNR_XX', 'SNR_YY', 'RFIPercentage_XX',]\n"
     )]
     open_mock.return_value.write.assert_has_calls(calls)
 # ============================================================= #

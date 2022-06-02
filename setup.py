@@ -12,12 +12,13 @@ setup(
     install_requires=[
         "numpy",
         "astropy",
+        "toml"
     ],
     python_requires=">=3.6",
     scripts=[
         "bin/parset2preprocconfig"
     ],
-    version="0.4",
+    version="0.5",
     description='NenuFAR Parset to COPPER configuration file converter',
     url="https://github.com/AlanLoh/copper_preprocessing_config.git",
     author="Alan Loh",

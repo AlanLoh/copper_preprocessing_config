@@ -33,6 +33,7 @@ from typing import List
 import traceback
 import json
 import requests
+import toml
 
 
 from . import (
@@ -207,8 +208,8 @@ class CopperConfig:
                 },              
                 "compress": {
                     "value": None,
-                    "default": "false",
-                    "parsing_function": (lambda x: "false" if x.lower()=="false" else "true"),
+                    "default": False,
+                    "parsing_function": (lambda x: False if x.lower()=="false" else True),
                     "check_function": self._check_compress
                 },
                 "flag_strategy": {
@@ -220,7 +221,7 @@ class CopperConfig:
                 "flag_rfi": {
                     "value": None,
                     "default": DEFAULT_FLAG_RFI,
-                    "parsing_function": (lambda x: str(x).lower()),
+                    "parsing_function": (lambda x: bool(x)),
                     "check_function": self._check_flag_rfi
                 },
                 "flag_memoryperc": {
@@ -233,7 +234,7 @@ class CopperConfig:
             "quality": {
                 "sws": {
                     "value": None,
-                    "default": [f"'SW{i+1:02}-{g[0]}-{g[-1]}'" for i, g in enumerate(np.split(self.subbands, np.where(np.diff(self.subbands) != 1)[0] + 1))],
+                    "default": [f"SW{i+1:02}-{g[0]}-{g[-1]}" for i, g in enumerate(np.split(self.subbands, np.where(np.diff(self.subbands) != 1)[0] + 1))],
                     "parsing_function": (lambda x: [f"SW{i+1:02}-{val[0]}-{val[1]}" for i, val in enumerate(re.findall(r"(\d+)-(\d+)", x))]),
                     "check_function": self._check_sws,
                 },
@@ -314,19 +315,30 @@ class CopperConfig:
     # ----------------------- Internal ------------------------ #
     def _write_file(self, kind: str = "value") -> str:
         """ """
-        text = ""
-        text += self.tasks + "\n\n"
-        text += f"log_email = '{self.email}'\n"
-        text += "\n[worker]\n"
-        for key in self.data["worker"]:
-            text += f"{key} = {repr(self.data['worker'][key][kind])}\n"
-        text += "\n[process]\n"
-        for key in self.data["process"]:
-           text += f"{key} = {repr(self.data['process'][key][kind])}\n"
-        if self._quality_step:
-            text += "\n[quality]\n" 
-            for key in self.data["quality"]:
-                text += f"{key} = {repr(self.data['quality'][key][kind])}\n"
+        toml_dict = {
+            "tasks": self.tasks,
+            "log_email": self.email,
+        }
+        
+        for step in ["worker", "process", "quality"]:
+            step_dict = self.data[step]
+            toml_dict[step] = {key: step_dict[key][kind] for key in step_dict.keys()}
+        
+        text = toml.dumps(toml_dict)
+
+        # text = ""
+        # text += self.tasks + "\n\n"
+        # text += f"log_email = '{self.email}'\n"
+        # text += "\n[worker]\n"
+        # for key in self.data["worker"]:
+        #     text += f"{key} = {repr(self.data['worker'][key][kind])}\n"
+        # text += "\n[process]\n"
+        # for key in self.data["process"]:
+        #    text += f"{key} = {repr(self.data['process'][key][kind])}\n"
+        # if self._quality_step:
+        #     text += "\n[quality]\n" 
+        #     for key in self.data["quality"]:
+        #         text += f"{key} = {repr(self.data['quality'][key][kind])}\n"
 
         with open(self.file_name, "w") as wfile:
             wfile.write(text)
@@ -444,15 +456,15 @@ class CopperConfig:
 
 
     @staticmethod
-    def _check_compress(compress: str) -> bool:
+    def _check_compress(compress: bool) -> bool:
         """ """
-        return compress in ["false", "true"]
+        return isinstance(compress, bool)
 
 
     @staticmethod
-    def _check_flag_rfi(flag_rfi: str) -> bool:
+    def _check_flag_rfi(flag_rfi: bool) -> bool:
         """ """
-        return flag_rfi in ["false", "true"]
+        return isinstance(flag_rfi, bool)
 
 
     @staticmethod

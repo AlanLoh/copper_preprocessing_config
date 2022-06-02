@@ -8,7 +8,7 @@ ENV_FILE_PATH = "./"
 
 # Flag strategy (*.rfis / *.lua) path
 FLAG_STRATEGY_FILE_PATH = "./"
-DEFAULT_FLAG_RFI = "true"
+DEFAULT_FLAG_RFI = True
 DEFAULT_FLAG_MEMORYPERC = 30 # not set via parameters
 
 # Send or not Slack messages in the #alerte-nickel-preprocessing channel
