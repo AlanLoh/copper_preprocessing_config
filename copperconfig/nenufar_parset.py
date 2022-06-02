@@ -207,8 +207,8 @@ class CopperConfig:
                 },              
                 "compress": {
                     "value": None,
-                    "default": False,
-                    "parsing_function": (lambda x: False if x.lower()=="false" else True),
+                    "default": "false",
+                    "parsing_function": (lambda x: "false" if x.lower()=="false" else "true"),
                     "check_function": self._check_compress
                 },
                 "flag_strategy": {
@@ -220,7 +220,7 @@ class CopperConfig:
                 "flag_rfi": {
                     "value": None,
                     "default": DEFAULT_FLAG_RFI,
-                    "parsing_function": (lambda x: bool(x)),
+                    "parsing_function": (lambda x: str(x).lower()),
                     "check_function": self._check_flag_rfi
                 },
                 "flag_memoryperc": {
@@ -444,15 +444,15 @@ class CopperConfig:
 
 
     @staticmethod
-    def _check_compress(compress: bool) -> bool:
+    def _check_compress(compress: str) -> bool:
         """ """
-        return isinstance(compress, bool)
+        return compress in ["false", "true"]
 
 
     @staticmethod
-    def _check_flag_rfi(flag_rfi: bool) -> bool:
+    def _check_flag_rfi(flag_rfi: str) -> bool:
         """ """
-        return isinstance(flag_rfi, bool)
+        return flag_rfi in ["false", "true"]
 
 
     @staticmethod
@@ -676,6 +676,7 @@ class Parset(object):
         
         if SLACK_WEBHOOK_URL is None:
             log.warning("No Slack webhook URL can be found in env variable.")
+            return
 
         success_message = f"Successfull conversion to `{os.path.basename(file_name)}`"
         failure_message = f"Error while treating `{os.path.basename(self.parset)}`"
