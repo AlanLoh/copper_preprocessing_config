@@ -282,12 +282,12 @@ class CopperConfig:
     def tasks(self) -> str:
         """ """
         quality = self.data["quality"]
-        if (quality["sws"]["value"] is None) or (quality["stat_pols"]["value"] is None):
-            self._quality_step = False
-            log.info("No quality step will be applied.")
-            return "tasks = ['process', 'rsync_quality', 'rsync']"
-        else:
-            return "tasks = ['process', 'rsync_quality', 'quality', 'rsync']"
+        # if (quality["sws"]["value"] is None) or (quality["stat_pols"]["value"] is None):
+        #     self._quality_step = False
+        #     log.info("No quality step will be applied.")
+        #     return "['process', 'rsync_quality', 'rsync']"
+        # else:
+        return "['process', 'rsync_quality', 'quality', 'rsync']"
 
 
     # --------------------------------------------------------- #
@@ -495,7 +495,7 @@ class CopperConfig:
         for edges in matches:
             low_edge = int(edges[1])
             high_edge = int(edges[2])
-            if not np.any((self.subbands >= low_edge) * (self.subbands <= high_edge)):
+            if np.any((self.subbands >= low_edge) * (self.subbands <= high_edge)):
                 log.warning(
                     f"No subbands in the desired quality interval {low_edge}-{high_edge}."
                 )
