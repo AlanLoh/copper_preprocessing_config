@@ -658,10 +658,11 @@ class Parset(object):
             headers={"Content-Type": "application/json"}
         )
         if response.status_code != 200:
-            raise ValueError(
+            log.error(
                 f"Request to slack returned an error {response.status_code}, the response is:\n{response.text}"
             )
-        log.info("Slack message sent.")
+        else:
+            log.info("Slack message sent.")
 # ============================================================= #
 # ============================================================= #
 
